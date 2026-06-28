@@ -11,8 +11,10 @@ def classify_line(line: str) -> str:
         return "note"
     elif re.search(r"^[^:]+:\s+(In function|At top level|In file included from)", line):
         return "context"
+        # 
     elif re.search(r"\d+\s*\|", line):
         return "source"
+        # example: 42 |     ...
     elif re.search(r"\|.*?\^+~*", line):
         return "caret"
     else:
