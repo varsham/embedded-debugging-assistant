@@ -1,6 +1,6 @@
 # writing pytest test cases for classify_line
 
-from app.core.parser.gcc import classify_line
+from app.core.parser.gcc import classify_line, parse_diagnostic_line
 
 # fatal error
 def test_fatal_error():
@@ -104,3 +104,63 @@ def test_linker_error():
 def test_empty_context_line():
     line = "   |"
     assert classify_line(line) == "other"
+
+# test cases for parse_diagnostic_line
+def test_all_fields_parser():
+    line = "src/startup.c:88:21: warning: initialization makes pointer from integer without a cast [-Wint-conversion]"
+    assert parse_diagnostic_line(line) == {
+        "file_path": "src/startup.c",
+        "line_num": 88,
+        "col_num": 21,
+        "severity": "warning",
+        "message": "initialization makes pointer from integer without a cast",
+        "flag": "-Wint-conversion"
+    }
+
+def test_no_col_number_parser():
+    line = "src/drivers/spi.c:142: warning: array subscript 4 is outside array bounds of 'uint8_t' [-Warray-bounds]"
+    assert parse_diagnostic_line(line) == {
+        "file_path": "src/drivers/spi.c",
+        "line_num": 142,
+        "col_num": None,
+        "severity": "warning",
+        "message": "array subscript 4 is outside array bounds of 'uint8_t'",
+        "flag": "-Warray-bounds"
+    }
+
+def test_no_flag_parser():
+    line = "src/main.c:14:5: error: 'GPIOA_MODER' undeclared (first use in this function)"
+    assert parse_diagnostic_line(line) == {
+        "file_path": "src/main.c",
+        "line_num": 14,
+        "col_num": 5,
+        "severity": "error",
+        "message": "'GPIOA_MODER' undeclared (first use in this function)",
+        "flag": None
+    }
+
+def test_fatal_error_parser():
+    line = "src/drivers/gpio.c:4:10: fatal error: 'stm32f4xx_hal.h' file not found"
+    assert parse_diagnostic_line(line) == {
+        "file_path": "src/drivers/gpio.c",
+        "line_num": 4,
+        "col_num": 10,
+        "severity": "fatal error",
+        "message": "'stm32f4xx_hal.h' file not found",
+        "flag": None
+    }
+
+def test_note_line_parser():
+    line = "src/interrupts.c:102:5: note: interrupt vector table must be aligned to a 128-byte boundary"
+    assert parse_diagnostic_line(line) == {
+        "file_path": "src/interrupts.c",
+        "line_num": 102,
+        "col_num": 5,
+        "severity": "note",
+        "message": "interrupt vector table must be aligned to a 128-byte boundary",
+        "flag": None
+    }
+
+def test_non_diagnostic_parser():
+    line = "src/drivers/gpio.c: In function 'GPIO_Init':"
+    assert parse_diagnostic_line(line) is None

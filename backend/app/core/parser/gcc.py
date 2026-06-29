@@ -20,7 +20,6 @@ def classify_line(line: str) -> str:
         return "other"
 
 def parse_diagnostic_line(line: str) -> dict | None:
-    
     pattern = (
         r"^(?P<file>[^:]+):"                    # 1. File path
         r"(?P<line>\d+):"                       # 2. Line number
