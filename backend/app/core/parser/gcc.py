@@ -1,4 +1,7 @@
 import re
+from app.models.diagnostic import (
+    BuildOutput, Diagnostic, DiagnosticNote, Location, Severity
+)
 
 def classify_line(line: str) -> str:
     if re.search(r"^[^:]+:\d+:(\d+:)? fatal error:", line):
@@ -40,3 +43,115 @@ def parse_diagnostic_line(line: str) -> dict | None:
         "message": match.group('message'),
         "flag": match.group('flag'),
     }
+
+def parse_gcc_output(log: str) -> BuildOutput:
+    lines = log.splitlines()
+
+    state = "IDLE"
+    current_context: str | None = None
+    current_diagnostic: Diagnostic | None = None
+    current_note: DiagnosticNote | None = None
+    diagnostics: list[Diagnostic] = []
+    error_count = 0
+    warning_count = 0
+
+    for line in lines:
+        line_type = classify_line(line)
+
+        if state == "IDLE":
+            if line_type in ("error", "warning", "fatal error"):
+                current_diagnostic = _build_diagnostic(line, current_context)
+
+                if line_type in ("error", "fatal error"):
+                    error_count += 1
+                elif line_type == "warning":
+                    warning_count += 1
+                
+                state = "IN_DIAGNOSTIC"
+            elif line_type == "context":
+                # does not create a diagnostic
+                m = re.match(r"^[^:]+:\s+(.+?):\s*$", line)
+                if m:
+                    current_context = m.group(1)
+
+        elif state == "IN_DIAGNOSTIC":
+            if line_type in ("error", "warning", "fatal error"):
+                diagnostics.append(current_diagnostic)
+                current_diagnostic = _build_diagnostic(line, current_context)
+
+                if line_type in ("error", "fatal error"):
+                    error_count += 1
+                elif line_type == "warning":
+                    warning_count += 1
+            elif line_type == "note":
+                current_note = _build_note(line)
+                state = "IN_NOTE"
+            elif line_type == "source":
+                current_diagnostic.source_excerpt = line
+            elif line_type == "caret":
+                current_diagnostic.caret_line = line
+            elif line_type == "context":
+                # does not create a diagnostic
+                m = re.match(r"^[^:]+:\s+(.+?):\s*$", line)
+                if m:
+                    current_context = m.group(1)
+        
+        elif state == "IN_NOTE":
+            if line_type in ("error", "warning", "fatal error"):
+                current_diagnostic.notes.append(current_note)
+                current_note = None
+                diagnostics.append(current_diagnostic)          
+                current_diagnostic = _build_diagnostic(line, current_context)
+                if line_type in ("error", "fatal error"):
+                    error_count += 1
+                elif line_type == "warning":
+                    warning_count += 1
+
+                state = "IN_DIAGNOSTIC"
+            elif line_type == "note":
+                current_diagnostic.notes.append(current_note)
+                current_note = _build_note(line)
+                # state stays the same
+            elif line_type == "source":
+                current_note.source_line = line
+            elif line_type == "caret":
+                current_note.caret_line = line
+    
+    if state == "IN_NOTE" and current_note is not None:
+        current_diagnostic.notes.append(current_note)
+    if current_diagnostic is not None:
+        diagnostics.append(current_diagnostic)
+
+    return BuildOutput(
+        log_txt=log,
+        diagnostics=diagnostics,
+        error_count=error_count,
+        warning_count=warning_count
+    )
+
+def _build_diagnostic(line: str, context: str | None) -> Diagnostic:
+    parsed = parse_diagnostic_line(line)
+    loc = Location(
+        file_path=parsed["file_path"],
+        line_num=parsed["line_num"],
+        col_num=parsed["col_num"],
+    )
+    return Diagnostic(
+        location=loc,
+        severity=Severity(parsed["severity"]),
+        msg_txt=parsed["message"],
+        gcc_flag=parsed["flag"],
+        function_context=context,
+    )
+
+def _build_note(line: str) -> DiagnosticNote:
+    parsed = parse_diagnostic_line(line)
+    loc = Location(
+        file_path=parsed["file_path"],
+        line_num=parsed["line_num"],
+        col_num=parsed["col_num"],
+    )
+    return DiagnosticNote(
+        location=loc,
+        msg_txt=parsed["message"],
+    )
