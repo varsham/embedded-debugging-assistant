@@ -1,0 +1,14 @@
+arm-none-eabi-gcc -mcpu=cortex-m4 -c src/main.c -o build/main.o
+src/main.c: In function 'main':
+src/main.c:42:5: error: implicit declaration of function 'gpio_init' [-Wimplicit-function-declaration]
+   42 |     gpio_init(GPIOA);
+      |     ^~~~~~~~~
+src/main.c:42:5: note: did you mean 'gpio_deinit'?
+src/hal/gpio.h:15:6: note: 'gpio_deinit' declared here
+   15 | void gpio_deinit(GPIO_TypeDef *port);
+      |      ^~~~~~~~~~~
+src/main.c:67:3: warning: unused variable 'status' [-Wunused-variable]
+   67 |   int status = 0;
+      |   ^~~~~~
+arm-none-eabi-gcc -mcpu=cortex-m4 -c src/uart.c -o build/uart.o
+make: *** [build/main.o] Error 1
