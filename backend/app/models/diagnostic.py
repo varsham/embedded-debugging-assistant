@@ -29,9 +29,25 @@ class Diagnostic(BaseModel):
     caret_line: Optional[str] = None
     notes: list[DiagnosticNote] = []
 
+class LinkerErrorKind(str, Enum):
+    OVERFLOW = "overflow"
+    UNDEFINED_REF = "undefined_ref"
+
+class LinkerError(BaseModel):
+    kind: LinkerErrorKind
+    # for undefined_ref
+    file_path: Optional[str] = None
+    line_num: Optional[int] = None
+    symbol: Optional[str] = None
+    object_file: Optional[str] = None
+    function_context: Optional[str] = None
+    # for overflow
+    region: Optional[str] = None
+    bytes_overflowed: Optional[int] = None
+
 class BuildOutput(BaseModel):
     log_txt: str
     diagnostics: list[Diagnostic] = []
+    linker_errors: list[LinkerError] = []
     error_count: int
     warning_count: int
-
