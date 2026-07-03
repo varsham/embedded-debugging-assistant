@@ -1,7 +1,6 @@
 import re
 from app.models.diagnostic import LinkerError, LinkerErrorKind
 
-
 def classify_linker_line(line: str) -> str:
     if re.search(r"ld:.*in function", line):
         return "ld_context"
@@ -11,7 +10,6 @@ def classify_linker_line(line: str) -> str:
         return "overflow"
     else:
         return "other"
-
 
 def parse_undefined_ref_line(line: str) -> dict | None:
     pattern = (
@@ -28,7 +26,6 @@ def parse_undefined_ref_line(line: str) -> dict | None:
         "symbol": match.group("symbol"),
     }
 
-
 def parse_overflow_line(line: str) -> dict | None:
     pattern = (
         r"^.*?region `(?P<region>[^']+)'\s*"
@@ -41,7 +38,6 @@ def parse_overflow_line(line: str) -> dict | None:
         "region": match.group("region"),
         "overflowed_bytes": int(match.group("overflowed_bytes")),
     }
-
 
 def parse_linker_output(log: str) -> list[LinkerError]:
     lines = log.splitlines()
@@ -75,7 +71,6 @@ def parse_linker_output(log: str) -> list[LinkerError]:
 
     return linker_errors
 
-
 def _build_undefined_ref(line: str, object_file: str | None, function_context: str | None) -> LinkerError:
     parsed = parse_undefined_ref_line(line)
     return LinkerError(
@@ -87,7 +82,6 @@ def _build_undefined_ref(line: str, object_file: str | None, function_context: s
         object_file=object_file,
     )
 
-
 def _build_overflow(line: str, object_file: str | None, function_context: str | None) -> LinkerError:
     parsed = parse_overflow_line(line)
     return LinkerError(
@@ -97,7 +91,6 @@ def _build_overflow(line: str, object_file: str | None, function_context: str | 
         function_context=function_context,
         object_file=object_file,
     )
-
 
 def _parse_context_line(line: str) -> tuple[str, str] | None:
     match = re.search(
