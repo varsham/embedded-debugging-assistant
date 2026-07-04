@@ -1,0 +1,9 @@
+arm-none-eabi-ld -T linker.ld -o build/firmware.elf build/main.o build/uart.o
+/usr/lib/gcc/arm-none-eabi/bin/ld: build/main.o: in function 'main':
+src/main.c:42: undefined reference to 'gpio_init'
+src/main.c:51: undefined reference to 'uart_send'
+/usr/lib/gcc/arm-none-eabi/bin/ld: build/uart.o: in function 'uart_setup':
+src/uart.c:17: undefined reference to 'clock_enable'
+/usr/lib/gcc/arm-none-eabi/bin/ld: region `FLASH' overflowed by 4208 bytes
+collect2: error: ld returned 1 exit status
+make: *** [build/firmware.elf] Error 1
