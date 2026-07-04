@@ -1,3 +1,6 @@
+# Objective
+My goal is to create a custom parser that provides more descriptive error messages for beginners working with bare-metal programming.
+
 # Milestones
 
 ## Milestone 1: Core Parser
