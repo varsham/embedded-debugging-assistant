@@ -66,6 +66,8 @@ def parse_linker_output(log: str) -> list[LinkerError]:
                 result = _parse_context_line(line)
                 if result:
                     current_function_context, current_object_file = result
+            elif line_type == "overflow":
+                linker_errors.append(_build_overflow(line, current_object_file, current_function_context))
             else:
                 state = "IDLE"
 
