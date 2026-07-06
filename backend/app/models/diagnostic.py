@@ -51,3 +51,12 @@ class BuildOutput(BaseModel):
     linker_errors: list[LinkerError] = []
     error_count: int
     warning_count: int
+
+class DiagnosticType(str, Enum):
+    UNDEFINED_REF = "undefined_reference"
+    OVERFLOW = "overflow"
+    IMPLICIT_DEC = "implicit_declaration"
+    UNUSED_VAR = "unused_variable"
+    UNKNOWN = "unknown"
+
+    
